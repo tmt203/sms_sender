@@ -18,7 +18,7 @@ const brandSchema = new Schema({
     type: String,
     required: [true, "ERR_BRAND_CHANNEL_REQUIRED"],
     enum: {
-      values: ["sms"],
+      values: ["sms", "zns", "email"],
       message: "ERR_BRAND_CHANNEL_INVALID",
     },
   },

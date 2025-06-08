@@ -7,9 +7,10 @@ import morgan from "morgan";
 import path from "path";
 import { fileURLToPath } from "url";
 import xss from "xss-clean";
-import globalErrorHandler from "./utils/handlerGlobalError.js";
 import brandRouter from "./routes/brand.route.js";
+import messageRouter from "./routes/message.route.js";
 import templateRouter from "./routes/template.route.js";
+import globalErrorHandler from "./utils/handlerGlobalError.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +37,7 @@ app.use(compression());
 
 // Routes
 app.use("/api/sns/brands", brandRouter);
+app.use("/api/sns/messages", messageRouter);
 app.use("/api/sns/templates", templateRouter);
 
 app.get("/", (req, res) => {

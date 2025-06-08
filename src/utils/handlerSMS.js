@@ -1,8 +1,7 @@
 import https from "https";
-import Booking from "../models/booking.model.js";
 
-const ACCESS_TOKEN = "TSlBcFpQN23RUcwx0Top-0erXUy41VnL";
-const SENDER = "9743ba2c97a450bf";
+const ACCESS_TOKEN = process.env.SMS_ACCESS_TOKEN;
+const SENDER = process.env.SMS_SENDER;
 const SMS_TYPE = 1;
 
 /**
@@ -14,6 +13,8 @@ const SMS_TYPE = 1;
  * @returns
  */
 export const sendSMS = (phones, content, type = SMS_TYPE, sender = SENDER) => {
+  console.log(phones, content, type, sender);
+  
   const params = JSON.stringify({
     to: phones,
     content: content,
@@ -65,45 +66,4 @@ export const sendSMS = (phones, content, type = SMS_TYPE, sender = SENDER) => {
     req.write(params);
     req.end();
   });
-};
-
-/**
- * Function to send SMS 10 minutes before booking
- */
-export const checkAndSendReminders = async () => {
-  const now = new Date();
-  const tenMinutesFromNow = new Date(now.getTime() + 60 * 60 * 1000); // 60 minutes ahead
-
-  try {
-    // Fetch all bookings with booking_time within the next 10 minutes
-    const upcomingBookings = await Booking.find({
-      booking_time: {
-        $gte: now.toISOString(), // Booking time greater than now
-        $lte: tenMinutesFromNow.toISOString(), // Booking time less than or equal to 10 minutes from now
-      },
-      is_sended: false,
-    });
-
-    // Gather phone numbers and generate the message
-    const phones = upcomingBookings.map(
-      (booking) => `+84${booking.phone.slice(1)}`
-    );
-
-    if (phones.length > 0) {
-      const content = `Reminder: Your appointment is in 10 minutes. If you want to reschedule, please go to: https://google.com.vn/`;
-
-      // Send SMS to all users at once
-      sendSMS(phones, content, SMS_TYPE, SENDER);
-
-      // Mark SMS as sent for each booking
-      await Booking.updateMany(
-        { _id: { $in: upcomingBookings.map((b) => b._id) } },
-        { $set: { is_sended: true } }
-      );
-    } else {
-      console.log("No upcoming bookings found for reminder.");
-    }
-  } catch (err) {
-    console.error("Error fetching bookings:", err);
-  }
 };

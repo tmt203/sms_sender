@@ -1,10 +1,16 @@
-import { Schema } from "mongoose";
+import { Schema, model } from "mongoose";
 
 const destinationSchema = new Schema(
   {
     phone_number: {
       type: String,
-      required: [true, "ERR_DESTINATION_PHONE_REQUIRED"],
+    },
+    email: {
+      type: String,
+      match: [
+        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+        "ERR_DESTINATION_EMAIL_INVALID",
+      ],
     },
     list_param: {
       type: Map,
