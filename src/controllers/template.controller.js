@@ -6,3 +6,4 @@ export const getAllTemplates = factory.getAll(Template);
 export const createTemplate = factory.createOne(Template);
 export const updateTemplate = factory.updateOne(Template);
 export const deleteTemplate = factory.deleteOne(Template);
+export const deleteTemplates = factory.deleteMany(Template);

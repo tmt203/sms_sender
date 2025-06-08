@@ -2,28 +2,33 @@ import AppError from "./appError.js";
 import { ERROR_MESSAGES } from "./constants.js";
 
 const handleCastErrorDB = (err) => {
-	const message = `Invalid ${err.path}: ${err.value}.`;
-	return new AppError(message, 400);
+	return new AppError(`Invalid ${err.path}: ${err.value}.`, 400, "ERR_CAST_ERROR");
 };
 
 const handleDuplicateFieldsDB = (err) => {
-	const value = err.errmsg.match(/(["'])(\\?.)*?\1/)[0];
+	let value = "";
+	const match = err.message.match(/(["'])(\\?.)*?\1/);
+	if (match) value = match[0];
 
-	const message = `Duplicate field value: ${value}. Please use another value!`;
-	return new AppError(message, 400);
+	return new AppError(
+		`Duplicate field value: ${value}. Please use another value!`,
+		400,
+		"ERR_DUPLICATE_FIELD"
+	);
 };
 
 const handleValidationErrorDB = (err) => {
 	const errors = Object.values(err.errors).map((el) => el.message);
-
 	const message = `Invalid input data. ${errors.join(". ")}`;
-	return new AppError(message, 400);
+
+	return new AppError(message, 400, "ERR_VALIDATION_FAILED");
 };
 
-const handleJWTError = () => new AppError("Invalid token. Please log in again!", 401);
+const handleJWTError = () =>
+	new AppError("Invalid token. Please log in again!", 401, "ERR_JWT_INVALID");
 
 const handleJWTExpiredError = () =>
-	new AppError("Your token has expired! Please log in again.", 401);
+	new AppError("Your token has expired! Please log in again.", 401, "ERR_JWT_EXPIRED");
 
 const sendErrorDev = async (err, req, res) => {
 	if (req.originalUrl.startsWith("/api")) {
@@ -68,12 +73,12 @@ const sendErrorProd = async (err, req, res) => {
 
 	// ✅ AppError hoặc lỗi đã biết
 	if (err.isOperational) {
-		const errorId = await saveError(err);
+		// const errorId = await saveError(err);
 
 		return res.status(err.statusCode).json({
 			status: err.status,
 			code: err.errorCode || "ERR_UNKNOWN",
-			message: `${err.message} (${errorId})`,
+			message: `${err.message}`,
 		});
 	}
 
