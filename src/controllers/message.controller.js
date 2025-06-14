@@ -3,64 +3,67 @@ import Template from "../models/template.model.js";
 import AppError from "../utils/appError.js";
 import catchAsync from "../utils/catchAsync.js";
 import * as factory from "../utils/handlerFactory.js";
-import { sendSMS } from "../utils/handlerSMS.js";
+import axios from "axios";
+
+const SMS_API_URL = process.env.SMS_API_URL;
+const SMS_API_KEY = process.env.SMS_API_KEY;
+const SMS_API_DEVICES = process.env.SMS_API_DEVICES;
 
 export const createMessage = catchAsync(async (req, res, next) => {
-  const { template_id, destinations } = req.body;
+	const { template_id, destinations } = req.body;
 
-  const template = await Template.findById(template_id);
-  if (!template) {
-    return next(
-      new AppError("Template not found", 404, "ERR_TEMPLATE_NOT_FOUND")
-    );
-  }
+	const template = await Template.findById(template_id);
+	if (!template) {
+		return next(new AppError("Template not found", 404, "ERR_TEMPLATE_NOT_FOUND"));
+	}
 
-  const { content, params } = template;
+	const { content, params } = template;
 
-  const renderedMessages = [];
+	const renderedMessages = destinations.map((destination) => {
+		const { phone_number, list_param = {} } = destination;
 
-  for (const destination of destinations) {
-    const { phone_number, list_param = {} } = destination;
+		const missingParams = params.filter((param) => !list_param.hasOwnProperty(param));
+		if (missingParams.length > 0) {
+			throw new AppError(
+				`Missing parameters: ${missingParams.join(", ")}`,
+				400,
+				"ERR_MISSING_TEMPLATE_PARAMS"
+			);
+		}
 
-    const missingParams = params.filter(
-      (param) => !list_param.hasOwnProperty(param)
-    );
+		const finalContent = content.replace(/{{\s*(\w+)\s*}}/g, (_, key) => list_param[key] || "");
 
-    if (missingParams.length > 0) {
-      return next(
-        new AppError(
-          `Missing parameters: ${missingParams.join(", ")}`,
-          400,
-          "ERR_MISSING_TEMPLATE_PARAMS"
-        )
-      );
-    }
+		return {
+			phone_number: `+84${phone_number.slice(1)}`,
+			message: finalContent,
+		};
+	});
 
-    // Render nội dung tin nhắn
-    const finalContent = content.replace(/{{\s*(\w+)\s*}}/g, (_, key) => {
-      return list_param[key] || "";
-    });
+	try {
+		await Promise.all(
+			renderedMessages.map(({ phone_number, message }) =>
+				axios.get(SMS_API_URL, {
+					params: {
+						key: SMS_API_KEY,
+						number: phone_number,
+						message,
+						devices: SMS_API_DEVICES,
+						type: "sms",
+						prioritize: 0,
+					},
+				})
+			)
+		);
 
-    renderedMessages.push({
-      phone_number,
-      message: finalContent,
-    });
-  }
-
-  const phones = renderedMessages.map(
-    (msg) => `+84${msg.phone_number.slice(1)}`
-  );
-  const messages = renderedMessages.map((msg) => msg.message);
-
-  try {
-    const response = await sendSMS(phones, messages[0]);
-    res.status(200).json({ message: "SMS sent successfully", data: response });
-  } catch (error) {
-    console.error("Error sending SMS:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error sending SMS", error: error.message });
-  }
+		res.status(201).json({
+			code: "OK",
+			status: "success",
+			message: "Messages sent successfully",
+		});
+	} catch (error) {
+		console.error("Error sending SMS:", error.message);
+		res.status(500).json({ code: "ERR_SMS_SEND", message: "Error sending SMS", error: error.message });
+	}
 });
 
 export const getMessage = factory.getOne(Message);
