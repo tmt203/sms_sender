@@ -7,7 +7,7 @@ router.get("/:id", brandController.getBrand);
 router.get("/", brandController.getAllBrands);
 router.post("/", brandController.createBrand);
 router.put("/:id", brandController.updateBrand);
-router.delete("/:id", brandController.deleteBrand);
-router.delete("/", brandController.deleteBrands);
+router.delete("/:id", brandController.handleDeleteTemplatesInBrand, brandController.deleteBrand);
+router.delete("/", brandController.handleDeleteTemplatesInBrand, brandController.deleteBrands);
 
 export default router;
