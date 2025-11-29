@@ -5,7 +5,10 @@ const router = Router();
 
 router.get("/:id", messageController.getMessage);
 router.get("/", messageController.getAllMessages);
+
+router.post("/send-sms", messageController.sendCustomMessage);
 router.post("/", messageController.createMessage);
+
 router.put("/:id", messageController.updateMessage);
 
 export default router;

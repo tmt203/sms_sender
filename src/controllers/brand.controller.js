@@ -1,8 +1,7 @@
 import Brand from "../models/brand.model.js";
+import Template from "../models/template.model.js";
 import catchAsync from "../utils/catchAsync.js";
 import * as factory from "../utils/handlerFactory.js";
-import AppError from "../utils/appError.js";
-import Template from "../models/template.model.js";
 
 export const handleDeleteTemplatesInBrand = catchAsync(async (req, res, next) => {
 	const brandId = req.params.id;

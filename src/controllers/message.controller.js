@@ -9,6 +9,33 @@ const SMS_API_URL = process.env.SMS_API_URL;
 const SMS_API_KEY = process.env.SMS_API_KEY;
 const SMS_API_DEVICES = process.env.SMS_API_DEVICES;
 
+export const sendCustomMessage = catchAsync(async (req, res, next) => {
+	const { phone_number, message } = req.body;
+
+	try {
+		await axios.get(SMS_API_URL, {
+			params: {
+				key: SMS_API_KEY,
+				number: phone_number,
+				message,
+				devices: SMS_API_DEVICES,
+				type: "sms",
+				prioritize: 0,
+			},
+		});
+		res.status(200).json({
+			code: "OK",
+			status: "success",
+			message: "Message sent successfully",
+		});
+	} catch (error) {
+		console.error("Error sending SMS:", error.message);
+		res
+			.status(500)
+			.json({ code: "ERR_SMS_SEND", message: "Error sending SMS", error: error.message });
+	}
+});
+
 export const createMessage = catchAsync(async (req, res, next) => {
 	const { template_id, destinations } = req.body;
 
@@ -62,7 +89,9 @@ export const createMessage = catchAsync(async (req, res, next) => {
 		});
 	} catch (error) {
 		console.error("Error sending SMS:", error.message);
-		res.status(500).json({ code: "ERR_SMS_SEND", message: "Error sending SMS", error: error.message });
+		res
+			.status(500)
+			.json({ code: "ERR_SMS_SEND", message: "Error sending SMS", error: error.message });
 	}
 });
 
